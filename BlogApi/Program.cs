@@ -11,7 +11,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200") // Angular uygulamanýn URL'si
+        policy.WithOrigins("https://localhost:4200") // Angular uygulamanýn URL'si
               .AllowAnyHeader()
               .AllowAnyMethod();
         //.AllowCredentials(); // Eðer cookie veya authentication bilgisi gönderiyorsan açabilirsin
