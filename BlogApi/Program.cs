@@ -1,13 +1,21 @@
 using BlogApi.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;  // JWT doðrulama için gerekli
-using System.Text;  // Encoding sýnýfýný kullanabilmek için
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS yapýlandýrmasý ekleyin
+// Port ortam deðiþkeni al, yoksa 7257 kullan
+var port = Environment.GetEnvironmentVariable("PORT") ?? "7257";
+
+// Kestrel ayarlarý
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(int.Parse(port));  // 0.0.0.0:port dinle
+});
+
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin", policy =>
@@ -18,15 +26,15 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add services to the container.
+// Controller ekle
 builder.Services.AddControllers();
 
-// DbContext'i servis container'a ekleyin
+// DbContext PostgreSQL baðlantýsý
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))); // PostgreSQL için UseNpgsql
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// JWT doðrulama için gerekli ayarlarý ekleyin
-var key = Encoding.ASCII.GetBytes("your_secret_key_here");  // Gizli anahtarýnýzý burada belirtin
+// JWT ayarlarý
+var key = Encoding.ASCII.GetBytes("your_secret_key_here");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -36,40 +44,37 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
-            ValidIssuer = "your_issuer",  // Burada geçerli issuer (yayýncý) adý belirtin
-            ValidAudience = "your_audience",  // Burada geçerli audience (hedef kitle) adý belirtin
-            IssuerSigningKey = new SymmetricSecurityKey(key)  // Burada anahtarýnýzý kullanýn
+            ValidIssuer = "your_issuer",
+            ValidAudience = "your_audience",
+            IssuerSigningKey = new SymmetricSecurityKey(key)
         };
     });
 
-// Swagger yapýlandýrmasý
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// CORS politikasýný kullanýn
+// CORS kullan
 app.UseCors("AllowSpecificOrigin");
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-
-
-app.UseStaticFiles(); // wwwroot altýndaki statik dosyalara eriþim izni verir
+app.UseStaticFiles();
 
 app.UseRouting();
-// HTTPS yönlendirmesini kaldýrýyoruz
-// app.UseHttpsRedirection();  // Bunu kaldýrýyoruz
 
-// HTTP portunu belirleyelim
-app.Urls.Add("http://localhost:7257");  // HTTP URL'yi ekleyin
+// HTTPS yönlendirmesi kaldýrýlmýþ
+// app.UseHttpsRedirection();
 
+app.UseAuthentication(); // JWT authentication ekle, yoktu
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
