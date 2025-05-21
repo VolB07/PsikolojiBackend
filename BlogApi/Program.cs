@@ -1,41 +1,26 @@
 using BlogApi.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Port ortam deðiþkeni al, yoksa 7257 kullan
-var port = Environment.GetEnvironmentVariable("PORT") ?? "7257";
-
-// Kestrel ayarlarý
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(int.Parse(port));  // 0.0.0.0:port dinle
-});
 
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigin", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
     });
 });
 
-// Controller ekle
+// DbContext ve diðer servisler
 builder.Services.AddControllers();
-
-// DbContext PostgreSQL baðlantýsý
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// JWT ayarlarý
 var key = Encoding.ASCII.GetBytes("your_secret_key_here");
-
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -50,14 +35,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// CORS kullan
-app.UseCors("AllowSpecificOrigin");
+app.UseCors("AllowAll");
 
 if (app.Environment.IsDevelopment())
 {
@@ -69,12 +52,17 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// HTTPS yönlendirmesi kaldýrýlmýþ
-// app.UseHttpsRedirection();
-
-app.UseAuthentication(); // JWT authentication ekle, yoktu
+app.UseAuthentication();
 app.UseAuthorization();
 
+// Render tarafýndan saðlanan portu kullan
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+app.Urls.Add($"http://*:{port}");
+
+// Basit kök endpoint
+app.MapGet("/", () => "API is running");
+
+// Controllerlar
 app.MapControllers();
 
 app.Run();
