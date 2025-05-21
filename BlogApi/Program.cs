@@ -9,11 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        policy.WithOrigins("http://localhost:4200/")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
+
 
 // DbContext ve diðer servisler
 builder.Services.AddControllers();
