@@ -11,7 +11,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://psikolojifrontend.onrender.com/") // Angular uygulamanýn URL'si
+        policy.WithOrigins("https://psikolojifrontend.onrender.com") // Angular uygulamanýn URL'si
               .AllowAnyHeader()
               .AllowAnyMethod();
         //.AllowCredentials(); // Eðer cookie veya authentication bilgisi gönderiyorsan açabilirsin
